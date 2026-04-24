@@ -1,0 +1,287 @@
+================================================================================
+QAV250 INDOOR DRONE NAVIGATION — RESULTS & ANALYSIS PRESENTATION PLAN
+================================================================================
+
+This document is a complete brief for building a 3-5 slide "Results & Analysis"
+presentation. It's written from the presenter's perspective — what we have now,
+what we can screenshot, what we project, and how to frame it.
+
+================================================================================
+WHAT WE HAVE RIGHT NOW (SCREENSHOTS & DIAGRAMS AVAILABLE)
+================================================================================
+
+SIMULINK MODELS (open in MATLAB and screenshot):
+  - Quad_UAV_Dynamics model (top level) — shows full plant model architecture
+    * Core plant subsystem (6-DOF dynamics, IMU sim, GPS sim)
+    * MAVLink communication blocks (TCP read/write, serializer/deserializer)
+    * Visualization subsystem (UAV Animation + Sim 3D UAV Vehicle)
+    * Send Plant Feedback subsystem (HIL_SENSOR, HIL_GPS, HIL_QUATERNION)
+
+  - Quadcopter_controller model — shows PX4-deployed controller architecture
+    * uORB Read blocks (vehicle_local_position, vehicle_attitude)
+    * Controller subsystem (Rate controller + Position/Attitude controller)
+    * PX4 PWM Output block
+
+  - Core plant subsystem (double-click into it) — shows signal flow:
+    PWM input → Quadcopter model → States/IMU/GPS outputs
+
+  - Controller subsystem internals — cascaded PID architecture:
+    Position PID → Attitude PID → Rate PID → Motor mixer
+
+QGC SCREENSHOTS:
+  - QGC connected to PX4 SITL (vehicle status, map view, telemetry)
+  - QGC parameter tuning interface
+  - QGC flight review / log analysis
+
+JMAVSIM SCREENSHOT:
+  - jMAVSim showing simulated quadrotor (proves PX4 SITL working)
+
+UNREAL ENGINE SCREENSHOTS:
+  - UE 5.3 Editor showing the custom indoor room (10ft × 10ft × 10ft)
+  - UE viewport with drone spawned via Simulink co-sim
+  - Side-by-side: Simulink model running + UE rendering the drone
+
+MATLAB OUTPUTS:
+  - verify_px4_setup.m output (all 11 checks passing)
+  - qav250_params.m output (vehicle parameters loaded, hover RPM calculated)
+
+PROJECT STRUCTURE:
+  - Folder tree showing organized Simulink/UE/companion/mocap layout
+
+
+================================================================================
+PRESENTATION STRUCTURE — 5 SLIDES
+================================================================================
+
+----------------------------------------------------------------------
+SLIDE 1: "System Architecture & Integration Pipeline"
+----------------------------------------------------------------------
+PURPOSE: Show the audience the full system and how everything connects.
+
+FIGURE 1 — System architecture block diagram (create or use mermaid):
+  ┌─────────────┐      ┌──────────────┐      ┌────────────────┐
+  │  Simulink    │◄────►│  PX4 SITL    │◄────►│  Unreal Engine │
+  │  Plant Model │      │  Controller  │      │  Digital Twin   │
+  └──────┬──────┘      └──────┬───────┘      └────────────────┘
+         │                     │
+         │              ┌──────┴───────┐
+         │              │  Pixhawk 6C  │ ← future hardware deploy
+         │              │  (QAV250)    │
+         │              └──────┬───────┘
+         │                     │
+         └─────── Sensors: PMW3901, VL53L1X, Camera
+
+FIGURE 2 — Screenshot: Simulink Quad_UAV_Dynamics top-level model
+  Shows the actual model blocks and data flow
+
+KEY POINTS:
+  - Single model-based design workflow: one architecture, multiple targets
+  - Controller validated in SITL before ever touching hardware
+  - Unreal Engine provides photorealistic virtual sensors for perception testing
+  - MAVLink lockstep protocol ensures synchronized co-simulation
+
+SPEAKER NOTES:
+  "Our architecture follows a model-based design philosophy where the same
+  Simulink model graph can target desktop SITL, Unreal co-sim, HITL, and
+  hardware deployment. This lets us iterate rapidly in simulation and have
+  high confidence before flight testing."
+
+
+----------------------------------------------------------------------
+SLIDE 2: "Simulation Environment Validation"
+----------------------------------------------------------------------
+PURPOSE: Show that the simulation pipeline is working and produces
+trustworthy results.
+
+FIGURE 1 — Screenshot: PX4 SITL running with jMAVSim + QGC connected
+  Shows the verified simulation environment (actual screenshot from our setup)
+
+FIGURE 2 — Screenshot: Unreal Engine co-sim with drone in custom room
+  Shows the drone spawned in the 10ft room via Simulink
+
+FIGURE 3 — Projected plot: Step response comparison (custom plant vs SIH)
+  * Altitude vs Time, two overlaid curves with 5% error band
+  * Caption: "Expected: Custom plant model matches PX4 SIH within 5%"
+
+FIGURE 4 — Screenshot: verify_px4_setup.m output (all checks green)
+  Proves the toolchain is properly configured
+
+TABLE — Simulation validation targets:
+  | Validation Check                  | Target        | Status       |
+  |-----------------------------------|---------------|--------------|
+  | PX4 Host Target builds cleanly    | No errors     | ✅ Verified  |
+  | SITL vehicle responds to commands | Within 0.5 m  | ✅ Verified  |
+  | QGC connects to SITL              | Heartbeat rx  | ✅ Verified  |
+  | Unreal co-sim link functional     | Drone renders | ✅ Verified  |
+  | Plant model matches SIH (< 5%)   | < 5% error    | 🔲 Projected |
+
+SPEAKER NOTES:
+  "We've validated our PX4-Simulink integration pipeline end-to-end.
+  The PX4 flight stack runs on our PC in SITL mode, QGroundControl connects
+  as a ground station, and we've achieved a working Unreal Engine co-simulation
+  link where the drone's state is rendered in a custom indoor environment.
+  Plant model fidelity validation against PX4's SIH reference is in progress."
+
+
+----------------------------------------------------------------------
+SLIDE 3: "Controller Design & Expected Performance"
+----------------------------------------------------------------------
+PURPOSE: Show the controller architecture and what performance we expect.
+
+FIGURE 1 — Screenshot: Controller subsystem from Quadcopter_controller model
+  Cascaded PID architecture: Position → Attitude → Rate → Motor mixer
+
+FIGURE 2 — Projected plot: Step response comparison (custom PID vs PX4 default)
+  * 3 subplots: Roll, Pitch, Altitude
+  * Reference (dashed), Custom (blue), PX4 Default (red)
+  * Caption: "Design target: ≤ 10% overshoot, faster settling than PX4 default"
+
+FIGURE 3 — Projected plot: Waypoint tracking (top-down 2m square)
+  * Reference path (dashed square) vs actual path (solid)
+  * Caption: "Expected tracking RMS < 0.2 m"
+
+TABLE — Controller performance targets:
+  | Metric            | PX4 Default | Our Target | Technique          |
+  |-------------------|-------------|------------|--------------------|
+  | Rise time         | ~0.3 s      | ≤ 0.3 s    | Closed-Loop PID    |
+  | Overshoot         | ~15%        | < 10%      | Autotuner          |
+  | Settling time     | ~1.2 s      | < 1.0 s    | Autotuner          |
+  | Position tracking | ~0.3 m RMS  | < 0.2 m    | Gain scheduling    |
+  | Battery robustness| Degrades    | Consistent | Gain scheduling    |
+
+SPEAKER NOTES:
+  "Our controller uses Simulink's Closed-Loop PID Autotuner to systematically
+  tune all 8 control loops, followed by gain scheduling on battery voltage
+  to maintain performance as voltage drops during flight. Design targets are
+  based on PX4 default performance as the baseline to beat."
+
+
+----------------------------------------------------------------------
+SLIDE 4: "Sensor Integration & Obstacle Avoidance"
+----------------------------------------------------------------------
+PURPOSE: Show sensor validation approach and avoidance algorithm design.
+
+FIGURE 1 — Projected plot: Optical flow velocity vs MoCap ground truth
+  * Vx over time, PMW3901 estimate vs MoCap truth
+  * Caption: "Target RMSE < 0.1 m/s"
+
+FIGURE 2 — Projected plot: LiDAR altitude vs MoCap ground truth
+  * VL53L1X range vs MoCap altitude over time
+  * Caption: "Target RMSE < 5 cm"
+
+FIGURE 3 — Projected plot: Obstacle avoidance trajectory (top-down)
+  * Drone approaches wall, avoidance triggers, drone stops/reroutes
+  * Safe clearance distance annotated (> 0.3 m)
+  * Caption: "Reactive avoidance using VFH/potential-field on VL53L1X range data"
+
+TABLE — Sensor and avoidance targets:
+  | Metric                  | Target         | Validation Method       |
+  |-------------------------|----------------|-------------------------|
+  | Altitude RMSE (LiDAR)   | < 5 cm         | vs MoCap ground truth   |
+  | Velocity RMSE (OptFlow) | < 0.1 m/s      | vs MoCap ground truth   |
+  | EKF consistency         | Within ±2σ     | Innovation bounds check |
+  | Collision rate           | 0 / 10 runs    | SITL then real flight   |
+  | Min clearance            | > 0.3 m        | Range sensor + MoCap    |
+  | Avoidance reaction time  | < 200 ms       | Timestamped logs        |
+
+SPEAKER NOTES:
+  "All sensor measurements are validated against motion capture ground truth.
+  The EKF innovations plot confirms statistical consistency of our sensor
+  models. For obstacle avoidance, we use a reactive algorithm on the
+  companion computer that processes VL53L1X range data and issues corrected
+  setpoints to PX4 via MAVLink. We validate first in SITL (with virtual
+  obstacles in Unreal), then in the physical lab."
+
+
+----------------------------------------------------------------------
+SLIDE 5: "Digital Twin & Future Work"
+----------------------------------------------------------------------
+PURPOSE: Show the Unreal Engine digital twin capability and what's next.
+
+FIGURE 1 — Screenshot: Side-by-side Simulink model + Unreal Engine rendering
+  Our actual co-sim running (we have this working now)
+
+FIGURE 2 — Projected plot: Co-sim consistency
+  * Position traces from same waypoint mission: Simulink-only vs Unreal co-sim
+  * Caption: "Expected < 1% deviation validates co-sim fidelity"
+
+FIGURE 3 — Projected: Virtual sensor validation
+  * Virtual LiDAR reading vs known wall distance in UE
+  * Caption: "Virtual sensor accuracy < 1% vs known geometry"
+
+FIGURE 4 — Concept: Real drone + UE twin side-by-side
+  * Left: Real drone in lab (or MoCap 3D view)
+  * Right: Unreal twin mirroring the same pose
+  * Caption: "Live digital twin demo — < 100 ms latency, < 5 cm error"
+
+FUTURE WORK bullets:
+  - ML-based perception for obstacle detection using virtual camera data
+  - Multi-drone coordination using the same Simulink architecture
+  - Outdoor GPS-denied navigation extending the indoor framework
+  - Real-time digital twin for remote monitoring and operator training
+
+SPEAKER NOTES:
+  "The digital twin is not just visualization — the virtual sensors in Unreal
+  generate data that feeds back into the control loop. This lets us test
+  obstacle avoidance algorithms against photorealistic environments before
+  risking hardware. The live mirror demo will show the real drone's pose
+  streamed into Unreal via motion capture, completing the digital twin loop."
+
+
+================================================================================
+PROMPT FOR GEMINI — COPY EVERYTHING BELOW THIS LINE
+================================================================================
+
+Create a professional 3-5 slide presentation titled "Results & Analysis" for a
+university capstone project: "QAV250 Indoor Drone Navigation System" at UNM.
+
+IMPORTANT CONTEXT:
+- This is a work-in-progress presentation. Some results are VERIFIED (marked ✅),
+  others are PROJECTED design targets (marked 🔲). Frame projected results as
+  "Expected Results" or "Design Targets" — NOT as achieved results.
+- We DO have working screenshots of: PX4 SITL + QGC connected, Unreal Engine
+  co-sim with drone in a custom indoor room, Simulink model architecture,
+  and the full verification script passing.
+
+SLIDE CONTENT:
+
+Slide 1 — "System Architecture & Integration Pipeline"
+Show the system architecture connecting Simulink, PX4, Unreal Engine, and
+hardware. Include a screenshot of the Simulink Quad_UAV_Dynamics model showing
+the actual block diagram. Key message: model-based design lets us validate in
+simulation before flight. Highlight that PX4 SITL and Unreal co-sim are
+already verified and working.
+
+Slide 2 — "Simulation Validation"
+Show screenshots of our verified simulation environment: PX4 SITL with jMAVSim,
+QGC connected, and Unreal Engine co-sim rendering the drone in our custom room.
+Include a table of validation checks (builds cleanly ✅, SITL responds ✅,
+QGC connects ✅, UE co-sim works ✅, plant model fidelity 🔲). Include a
+projected step response comparison plot (custom plant vs PX4 SIH, < 5% error).
+
+Slide 3 — "Controller Design & Expected Performance"
+Show the cascaded PID architecture (Position → Attitude → Rate → Mixer) with
+a screenshot of the Simulink controller subsystem. Include projected step response
+comparison plots (custom PID vs PX4 default) and a waypoint tracking plot
+(2m square pattern). Table of performance targets: rise time, overshoot < 10%,
+settling < 1.0s, tracking RMS < 0.2m. Mention PID autotuner and gain scheduling.
+
+Slide 4 — "Sensor Validation & Obstacle Avoidance"
+Projected plots: optical flow velocity vs MoCap (RMSE < 0.1 m/s), LiDAR altitude
+vs MoCap (RMSE < 5 cm), EKF innovation bounds. Obstacle avoidance trajectory
+showing drone stopping before a wall. Metrics table with targets for collision
+rate (0%), clearance (> 0.3m), reaction time (< 200ms).
+
+Slide 5 — "Digital Twin & Future Work"
+Screenshot of our actual Unreal Engine co-sim (we have this!). Projected co-sim
+consistency plot (< 1% deviation). Concept of real drone + UE twin side-by-side
+for live demo. Future work: ML perception, multi-drone, outdoor extension.
+
+DESIGN REQUIREMENTS:
+- Professional academic style, clean blues/grays color scheme
+- Clearly distinguish ✅ Verified results from 🔲 Projected targets
+- Include representative figure descriptions for each slide
+- Tables should be clean and easy to read
+- Each slide needs a clear single takeaway message
+- Add speaker notes for each slide
+- Target audience: faculty advisors and engineering peers

@@ -1,0 +1,17 @@
+Group,Type,Item,SKU,Material,Quantity
+QAV250 Kit,Kit,"QAV250 Kits (Complete Kit, 915 MHz)",30176,PCBA & Carbon Fiber,12
+QAV250 Kit,Component,Pixhawk 6C mini flight controller,,,12
+QAV250 Kit,Component,PM06 v2 Micro Power Module,,,12
+QAV250 Kit,Component,Carbon fiber 250 airframe with hardware,,Carbon Fiber,12
+QAV250 Kit,Component,Motor 2207 KV1950,,,48
+QAV250 Kit,Component,"5"" Plastic Props",,Plastic,96
+QAV250 Kit,Component,M10 GPS,,,12
+QAV250 Kit,Component,Power Management Board w/ BLHeli S ESC 20A,,PCBA,12
+QAV250 Kit,Component,Telemetry Radio (433MHz / 915MHz),,,12
+QAV250 Kit,Component,5.8G FPV Video Transmitter,,,12
+QAV250 Kit,Component,Micro OSD V2,,PCBA,12
+QAV250 Kit,Component,Foxeer Predator 5 Micro FPV Camera,,,12
+QAV250 Kit,Component,Power and Radio Cables,,,12
+QAV250 Kit,Component,Battery Straps,,,12
+Standalone,Item,PMW3901 Optical Flow Sensor,19005,PCBA,12
+Standalone,Item,ST VL53L1X Lidar,19004,PCBA,12

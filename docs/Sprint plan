@@ -1,0 +1,221 @@
+# Revised 2-Week Sprint Plan — QAV250 Plant Model Validation
+
+## Core Thesis
+
+> **What happens in simulation also happens on the real drone.**
+
+The deliverable is a validated QAV250 Simulink plant model with measured parameters, proven through behavior matching between sim and reality, with Unreal Engine co-sim as part of the model-based design workflow.
+
+---
+
+## Deliverables
+
+| # | Deliverable | Description |
+|---|---|---|
+| **D1** | QAV250 plant model with real parameters | `qav250_params.m` updated with measured values; `Quad_UAV_Dynamics` model tuned to match real drone |
+| **D2** | Behavior matching results | Side-by-side plots: simulation response vs real flight data for step inputs |
+| **D3** | Unreal Engine co-sim demo | Lockstep PX4 controller ↔ Simulink plant ↔ UE visualization running end-to-end |
+| **D4** | Pixhawk deployment | MathWorks example controller deployed to Pixhawk 6C, flying with MoCap in cage |
+| **D5** | Final presentation | Results & Analysis slides with comparison plots |
+
+---
+
+## Team Division (4 Members)
+
+### Workstream A — Simulink + UE Co-Sim Pipeline (You)
+
+**What:** Finish the lockstep simulation with Unreal Engine visualization.
+
+**Remaining tasks (you and me):**
+- [ ] Wire Bus Selector outputs (position [X,Y,Z] and attitude reorder [roll,pitch,yaw]) to Sim 3D UAV Vehicle block in Visualization Subsystem
+- [ ] Add MATLAB Function block for attitude reorder (yaw,pitch,roll → roll,pitch,yaw) + rad2deg conversion
+- [ ] Configure Simulation 3D Scene Configuration to point to custom UE project (AutoVrtlEnv.uproject)
+- [ ] Test full lockstep flow: `Quadcopter_controller` (Monitor & Tune on PX4 Host Target) ↔ `Quad_UAV_Dynamics` (normal mode with Sim 3D blocks) ↔ UE rendering
+- [ ] Verify drone appears and moves correctly in UE room during lockstep sim
+- [ ] Update `Quad_UAV_Dynamics` with QAV250 parameters once Workstream B provides them
+
+**Depends on:** Nothing — can start immediately  
+**Feeds into:** D3 (UE demo), D2 (sim side of behavior matching)
+
+---
+
+### Workstream B — QAV250 Physical Parameter Measurement (Member 2)
+
+**What:** Measure the real drone and produce accurate parameter values.
+
+**Tasks:**
+- [ ] Weigh the fully assembled QAV250 with battery (→ `params.mass`)
+- [ ] Measure motor-to-center arm length (→ `params.arm_len`)
+- [ ] Estimate moment of inertia — options:
+  - Bifilar pendulum test (best if time permits)
+  - CAD estimate from component masses + distances
+  - Use datasheet approximations for similar frames
+- [ ] Motor characterization for 2207 KV1950 + 5" props:
+  - Thrust coefficient `kT`: from motor datasheet thrust tables, or bench test if thrust stand available
+  - Torque coefficient `kQ`: estimate as `kQ ≈ kT × prop_pitch_factor`
+  - Motor time constant `motor_tc`: typically 20-40 ms for BLHeli_S ESCs
+- [ ] Verify motor mapping / numbering (PX4 X-configuration convention)
+- [ ] Update `simulink/params/qav250_params.m` with all measured values
+- [ ] Calculate expected hover throttle from parameters: `throttle_hover = mass × g / (4 × kT × ω²)`
+
+**Depends on:** Physical access to the drone + scale + measuring tools  
+**Feeds into:** D1 (plant model), Workstream A (sim parameters), Workstream C (known baseline for comparison)
+
+**Reference — current estimates in `qav250_params.m`:**
+
+| Parameter | Current Estimate | Action |
+|---|---|---|
+| `mass` | 0.80 kg | **Measure** |
+| `arm_len` | 0.125 m | **Measure** |
+| `Ixx/Iyy` | 0.0034 kg·m² | **Estimate or test** |
+| `Izz` | 0.0060 kg·m² | **Estimate or test** |
+| `kT` | 1.0e-5 | **Datasheet or bench test** |
+| `kQ` | 1.2e-7 | **Estimate from kT** |
+| `motor_tc` | 0.025 s | **Datasheet (BLHeli_S)** |
+
+---
+
+### Workstream C — MoCap Setup + Flight Testing (Member 3)
+
+**What:** Get OptiTrack working with PX4 and fly the drone in the cage for data collection.
+
+**Tasks:**
+- [ ] Set up rigid body in Motive 2 (asymmetric marker arrangement on QAV250)
+- [ ] Install NatNet SDK on the MATLAB/Motive PC
+- [ ] Test NatNet connection from MATLAB (`natnet.m` → verify pose data)
+- [ ] Write coordinate transform: OptiTrack frame → PX4 NED frame
+- [ ] Write MAVLink bridge: MATLAB reads NatNet → sends `VISION_POSITION_ESTIMATE` to Pixhawk
+- [ ] Configure PX4 EKF2 parameters for external vision (see table below)
+- [ ] Verify fusion: MoCap pose matches QGC position display
+- [ ] First tethered hover test (safety pilot with RC kill switch)
+- [ ] Collect flight data: `.ulg` logs with known step inputs applied
+
+**PX4 EKF2 Parameters (set in QGC):**
+
+| Parameter | Value | Notes |
+|---|---|---|
+| `EKF2_EV_CTRL` | `15` | Fuse pos + vel + yaw from vision |
+| `EKF2_HGT_REF` | `Vision` | Altitude from MoCap |
+| `EKF2_EV_DELAY` | `10` ms | Tune based on actual pipeline latency |
+| `EKF2_EVP_NOISE` | `0.01` | Position noise (m) |
+| `EKF2_EVA_NOISE` | `0.01` | Attitude noise (rad) |
+
+> **Hardware setup:** Select **Pixhawk 6C** (not 6C mini) in the MathWorks board dropdown — same programming workflow.
+
+**Depends on:** Drone cage access, OptiTrack system running  
+**Feeds into:** D2 (real flight data for comparison), D4 (flying drone demo)
+
+---
+
+### Workstream D — Data Analysis + Presentation (Member 4)
+
+**What:** Process flight data, run comparison sims, build plots and presentation.
+
+**Tasks (first week — prep while waiting for flight data):**
+- [ ] Set up log analysis toolchain: PX4 `.ulg` → MATLAB import
+  - Use `ulogreader` from UAV Toolbox, or PX4's `pyulog` Python tools
+- [ ] Prepare comparison script: load .ulg data + run Simulink sim with same inputs → overlay plots
+- [ ] Create plot templates for:
+  - Altitude step response: sim vs real
+  - Roll/pitch step response: sim vs real
+  - Position tracking: sim vs real (if waypoint mission flown)
+  - Motor command comparison
+- [ ] Draft presentation skeleton (5 slides based on `results_analysis_context.txt`)
+
+**Tasks (second week — once flight data arrives):**
+- [ ] Import `.ulg` logs from Workstream C
+- [ ] Extract: position, attitude, motor commands, timestamps
+- [ ] Run same motor commands through `Quad_UAV_Dynamics` Simulink model with QAV250 params from Workstream B
+- [ ] Generate behavior matching plots
+- [ ] Calculate quantitative metrics: RMSE, % error, correlation
+- [ ] If sim doesn't match: flag which parameters need adjustment → feed back to Workstream B
+- [ ] Finalize presentation with actual results
+
+**Depends on:** Workstream B (parameters), Workstream C (flight data)  
+**Feeds into:** D2 (behavior matching results), D5 (presentation)
+
+---
+
+## Timeline
+
+```
+WEEK 1                          Mon     Tue     Wed     Thu     Fri
+──────────────────────────────────────────────────────────────────────
+A: Sim + UE Pipeline            ████████████████████████
+   Finish lockstep wiring       ████████
+   Test full PX4↔Plant↔UE flow          ████████████████
+
+B: Parameter Measurement        ████████████████
+   Weigh, measure, estimate     ████████████████
+   Update qav250_params.m                       ████████
+
+C: MoCap + Flight               ████████████████████████████████████
+   Motive rigid body setup      ████████
+   NatNet → MATLAB bridge               ████████████████
+   PX4 EKF2 config + verify                     ████████
+   First tethered hover                                  ████████
+
+D: Analysis Prep                        ████████████████████████████
+   Log import toolchain                 ████████
+   Comparison script + templates                ████████████████████
+
+                              ★ CONVERGENCE: B delivers params to A & C
+──────────────────────────────────────────────────────────────────────
+
+WEEK 2                          Mon     Tue     Wed     Thu     Fri
+──────────────────────────────────────────────────────────────────────
+A: Sim with real params         ████████████████
+   UE demo polished                     ████████████████
+
+C: Flight data collection       ████████████████████████
+   Step inputs, waypoints       ████████████████
+   Deploy MW controller                         ████████
+
+D: Behavior matching            ████████████████████████████████████
+   Sim vs real plots            ████████████████████████
+   Metric calculation                   ████████████████
+   Presentation finalized                               ████████████
+
+                              ★ CONVERGENCE: Final demo + presentation
+──────────────────────────────────────────────────────────────────────
+```
+
+---
+
+## Convergence Points
+
+### Mid-Week 1 (Wednesday):
+- **B → A:** Parameters delivered → update plant model → re-run sim with real QAV250 values
+- **B → C:** Parameters inform expected hover throttle → sanity check during first flight
+
+### End of Week 1 (Friday):
+- **C → D:** First flight data (.ulg) available → D begins sim vs real comparison
+- **A → All:** Lockstep PX4 ↔ Simulink ↔ UE pipeline verified
+
+### Mid-Week 2 (Wednesday):
+- **D → B:** If sim doesn't match, parameter adjustments needed → quick iteration loop
+- **C:** Deploy MathWorks example controller to Pixhawk for final demo flights
+
+### End of Week 2 (Friday):
+- **All → D5:** Final presentation with behavior matching results, UE demo recording, and flight test data
+
+---
+
+## What You & I Still Need To Finish (Workstream A)
+
+We were in the middle of wiring the Sim 3D blocks in `Quad_UAV_Dynamics/Visualization Subsystem`. Remaining:
+
+1. **Branch** the Bus Selector `[X,Y,Z]` output → also connect to `Sim3D UAV Vehicle` Translation input
+2. **Add MATLAB Function block** between Bus Selector1 and Sim3D UAV Vehicle:
+   ```matlab
+   function rpy = reorder_attitude(ypr)
+       rpy = rad2deg([ypr(3), ypr(2), ypr(1)]);
+   end
+   ```
+3. **Configure Scene Config block** → set to Unreal Editor + AutoVrtlEnv.uproject path
+4. **Test the full lockstep flow:**
+   - Instance 1: `Quadcopter_controller` → Monitor & Tune on PX4 Host Target
+   - Instance 2: `Quad_UAV_Dynamics` (with Sim 3D blocks) → Run in normal mode
+   - UE Editor playing → drone should appear and respond to commands
+
+Once that's verified, we swap in the real QAV250 parameters (from Workstream B) and the lockstep sim will produce QAV250-accurate behavior that can be compared against real flight data.

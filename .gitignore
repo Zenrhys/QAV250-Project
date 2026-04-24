@@ -1,0 +1,73 @@
+# MATLAB / Simulink
+*.slxc
+*.mexa64
+*.mexw64
+*.mexmaci64
+slprj/
+codegen/
+*.autosave
+*.asv
+*.m~
+*.mat
+!simulink/params/*.mat
+
+# Simulink cache
+*.slxc
+sccprj/
+
+# PX4 build artifacts
+build/
+*.px4
+*.elf
+*.bin
+
+# Unreal Engine — build/cache/logs
+**/Binaries/
+**/Intermediate/
+**/Saved/
+**/DerivedDataCache/
+*.sln
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+
+# Unreal Engine — large binary content (MathWorks default assets)
+# Only version our custom levels and blueprints, not shipped assets
+**/Content/Environment/
+**/Content/Geometry/
+**/Content/Vehicle/
+**/Content/StarterContent/
+**/Content/HDRIBackdrop/
+**/Content/AutomotiveContent/
+**/Content/AerospaceContent/
+**/Content/RoadRunnerContent/
+*.uasset
+*.umap
+!**/Content/Maps/*.umap
+
+
+# Node.js / Presentation
+node_modules/
+dist/
+.vite/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
