@@ -61,7 +61,7 @@ Drone Project/
 
 | Phase | Objective | Status |
 |---|---|---|
-| 0 | Project structure & tooling | ✅ |
+| 0 | Project structure & tooling | ⬜ |
 | 1 | PX4 / QGC baseline flight | ⬜ |
 | 2 | PX4–Simulink integration (SIH) | ⬜ |
 | 3 | Simulink plant model | ⬜ |
