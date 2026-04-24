@@ -1,8 +1,6 @@
 # QAV250 Indoor Drone Navigation System
 
-## Capstone Project — UNM UAV Lab
-
-An advanced indoor drone navigation system built on the QAV250 platform using **Simulink** as the central development environment, with **PX4** flight control and an **Unreal Engine** digital twin.
+An indoor drone navigation system built on the QAV250 platform using **Simulink** as the central development environment, with **PX4** flight control and an **Unreal Engine** digital twin.
 
 ---
 
