@@ -12,7 +12,7 @@
 params.g       = 9.81;       % gravitational acceleration [m/s^2]
 
 %% ---------- Airframe ----------
-params.mass    = 0.80;       % total mass incl. battery [kg]
+params.mass    = 0.68;       % total mass incl. battery [kg]
                               % (QAV250 frame ~180 g, battery ~200 g,
                               %  electronics + motors ~420 g — measure!)
 params.arm_len = 0.125;      % motor-to-center distance [m] (250 mm diagonal / 2)
