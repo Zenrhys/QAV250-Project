@@ -12,16 +12,16 @@
 params.g       = 9.81;       % gravitational acceleration [m/s^2]
 
 %% ---------- Airframe ----------
-params.mass    = 0.80;       % total mass incl. battery [kg]
+params.mass    = 0.68;       % total mass incl. battery [kg]
                               % (QAV250 frame ~180 g, battery ~200 g,
                               %  electronics + motors ~420 g — measure!)
-params.arm_len = 0.125;      % motor-to-center distance [m] (250 mm diagonal / 2)
+params.arm_len = 0.127;      % motor-to-center distance [m] (250 mm diagonal / 2)
 
 % Inertia tensor [kg·m^2] — estimated; refine via bifilar pendulum or CAD
 %   Ixx ≈ Iyy for symmetric X-frame
-params.Ixx     = 0.0034;
-params.Iyy     = 0.0034;
-params.Izz     = 0.0060;
+params.Ixx     = 0.00121035;
+params.Iyy     = 0.00121035;
+params.Izz     = 0.0024207;
 params.Ixy     = 0;
 params.Ixz     = 0;
 params.Iyz     = 0;
