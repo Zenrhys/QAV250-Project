@@ -12,16 +12,16 @@
 params.g       = 9.81;       % gravitational acceleration [m/s^2]
 
 %% ---------- Airframe ----------
-params.mass    = 0.80;       % total mass incl. battery [kg]
+params.mass    = 0.68;       % total mass incl. battery [kg]
                               % (QAV250 frame ~180 g, battery ~200 g,
                               %  electronics + motors ~420 g — measure!)
-params.arm_len = 0.125;      % motor-to-center distance [m] (250 mm diagonal / 2)
+params.arm_len = 0.127;      % motor-to-center distance [m] (250 mm diagonal / 2)
 
 % Inertia tensor [kg·m^2] — estimated; refine via bifilar pendulum or CAD
 %   Ixx ≈ Iyy for symmetric X-frame
-params.Ixx     = 0.0034;
-params.Iyy     = 0.0034;
-params.Izz     = 0.0060;
+params.Ixx     = 0.00121035;
+params.Iyy     = 0.00121035;
+params.Izz     = 0.0024207;
 params.Ixy     = 0;
 params.Ixz     = 0;
 params.Iyz     = 0;
@@ -36,10 +36,10 @@ params.J       = diag([params.Ixx, params.Iyy, params.Izz]);  % inertia matrix
 %  where omega is propeller angular velocity [rad/s]
 %
 %  These coefficients are estimates. Measure on a thrust stand!
-params.kT         = 1.0e-5;    % thrust coefficient [N/(rad/s)^2]
-params.kQ         = 1.2e-7;    % torque coefficient [N·m/(rad/s)^2]
+params.kT         = 1.34e-6;    % thrust coefficient [N/(rad/s)^2]
+params.kQ         = 2.01e-8;    % torque coefficient [N·m/(rad/s)^2]
 params.motor_tc   = 0.025;     % motor first-order time constant [s] (~25 ms for BLHeli_S)
-params.omega_max  = 2500 * (2*pi/60);  % max RPM → rad/s (~26180 rad/s at full throttle)
+params.omega_max  = 36000 * (2*pi/60);  % max RPM → rad/s (~26180 rad/s at full throttle)
 params.omega_min  = 0;         % min RPM (motors can reach zero)
 params.num_motors = 4;
 
@@ -54,7 +54,7 @@ params.Cd_rot  = 0.005;       % rotational drag coeff [N·m·s/rad]
 %  Maps [total_thrust; roll_moment; pitch_moment; yaw_moment]
 %  to individual motor thrusts [T1; T2; T3; T4].
 %
-%  X-configuration (PX4 convention):
+%  X-configuration (PX4 convention): Verified
 %     Motor 1: front-right (CW)
 %     Motor 2: rear-left   (CW)
 %     Motor 3: front-left  (CCW)
@@ -121,3 +121,6 @@ fprintf('  Mass: %.2f kg | Arm length: %.3f m\n', params.mass, params.arm_len);
 fprintf('  Motor kT: %.2e | kQ: %.2e\n', params.kT, params.kQ);
 fprintf('  Hover RPM (approx): %.0f\n', ...
     sqrt(params.mass * params.g / (params.num_motors * params.kT)) * 60/(2*pi));
+
+throttle_hover = (params.mass * params.g) / (params.num_motors * params.kT * params.omega_max^2);
+fprintf('  Hover Throttle: %.1f%%\n', throttle_hover * 100);
