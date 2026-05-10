@@ -3,13 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QAV250 — Indoor Drone Navigation</title>
-  <meta name="description" content="QAV250 Indoor Drone Navigation System — Model-Based Design & Validation">
+  <title>QAV250 — Indoor Drone Navigation System</title>
+  <meta name="description" content="QAV250 Model-Based Design & Digital Twin Validation — Capstone Presentation">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/src/styles/main.css">
 </head>
 <body>
+  <!-- Three.js Canvas -->
   <canvas id="three-canvas"></canvas>
-  <div id="app"></div>
+
+  <!-- Scanline overlay -->
+  <div id="scanlines"></div>
+
+  <!-- HUD Frame -->
+  <div id="hud">
+    <!-- Corner brackets -->
+    <div class="hud-corner top-left"></div>
+    <div class="hud-corner top-right"></div>
+    <div class="hud-corner bottom-left"></div>
+    <div class="hud-corner bottom-right"></div>
+
+    <!-- Top bar -->
+    <div id="hud-top">
+      <span class="hud-label" id="system-label">QAV250 // DIGITAL TWIN</span>
+      <span class="hud-label" id="zone-label">INITIALIZING</span>
+    </div>
+
+    <!-- Zone content area -->
+    <div id="zone-content"></div>
+
+    <!-- Progress energy line -->
+    <div id="progress-track">
+      <div id="progress-fill"></div>
+    </div>
+
+    <!-- Navigation hint -->
+    <div id="nav-hint">
+      <span class="key">←</span>
+      <span class="hint-text">NAVIGATE</span>
+      <span class="key">→</span>
+    </div>
+
+    <!-- Bottom data readout -->
+    <div id="hud-bottom">
+      <span class="data-readout" id="readout-left">SYS::READY</span>
+      <span class="data-readout" id="readout-center"></span>
+      <span class="data-readout" id="readout-right">FRAME <span id="zone-num">00</span>/14</span>
+    </div>
+  </div>
+
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
