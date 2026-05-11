@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QAV250 — Indoor Drone Navigation System</title>
+  <title>QAV250 — Plant Model Development & MBD Workflow Validation</title>
   <meta name="description" content="QAV250 Model-Based Design & Digital Twin Validation — Capstone Presentation">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,6 +16,36 @@
 
   <!-- Scanline overlay -->
   <div id="scanlines"></div>
+  <!-- Boot Sequence Overlay -->
+  <div id="boot-screen">
+    <div class="boot-hex-stream" id="boot-hex-left"></div>
+    <div class="boot-hex-stream" id="boot-hex-right"></div>
+    <div class="boot-center">
+      <div class="boot-radial">
+        <svg class="boot-disk" viewBox="0 0 300 300">
+          <defs>
+            <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#00f0ff"/>
+              <stop offset="100%" stop-color="#ff00aa"/>
+            </linearGradient>
+          </defs>
+          <!-- Layer 1: Outer — slow clockwise, long dashes -->
+          <circle class="disk-layer disk-outer" cx="150" cy="150" r="140"/>
+          <!-- Layer 2: Middle — progress ring, medium dashes -->
+          <circle class="disk-layer disk-mid-bg" cx="150" cy="150" r="110"/>
+          <circle class="disk-layer disk-mid-fill" id="boot-ring-fill" cx="150" cy="150" r="110"/>
+          <!-- Layer 3: Inner — fast counter-clockwise, fine dashes -->
+          <circle class="disk-layer disk-inner" cx="150" cy="150" r="80"/>
+        </svg>
+        <div class="boot-radial-inner">
+          <div class="boot-logo">QAV<span class="boot-accent">250</span></div>
+          <div class="boot-percent" id="boot-percent">0%</div>
+        </div>
+      </div>
+      <div class="boot-log" id="boot-log"></div>
+    </div>
+    <div class="boot-scanline"></div>
+  </div>
 
   <!-- HUD Frame -->
   <div id="hud">
@@ -50,7 +80,7 @@
     <div id="hud-bottom">
       <span class="data-readout" id="readout-left">SYS::READY</span>
       <span class="data-readout" id="readout-center"></span>
-      <span class="data-readout" id="readout-right">FRAME <span id="zone-num">00</span>/14</span>
+      <span class="data-readout" id="readout-right">FRAME <span id="zone-num">00</span>/16</span>
     </div>
   </div>
 

@@ -71,3 +71,12 @@ desktop.ini
 .idea/
 *.swp
 *~
+
+# Large binary files (exceed GitHub 100MB limit)
+*.zip
+*.ulg
+*.pdb
+screenshots/motor_test_5.gif
+presentation/public/images/results/motor_test_5.gif
+pixhawk 6c mini SD card/
+examples/Px4DemoHostTargetWithSimulinkPlant/work/code/Quadcopter_Controller

@@ -79,30 +79,80 @@ The deliverable is a validated QAV250 Simulink plant model with measured paramet
 
 **What:** Get OptiTrack working with PX4 and fly the drone in the cage for data collection.
 
-**Tasks:**
-- [ ] Set up rigid body in Motive 2 (asymmetric marker arrangement on QAV250)
-- [ ] Install NatNet SDK on the MATLAB/Motive PC
-- [ ] Test NatNet connection from MATLAB (`natnet.m` → verify pose data)
-- [ ] Write coordinate transform: OptiTrack frame → PX4 NED frame
-- [ ] Write MAVLink bridge: MATLAB reads NatNet → sends `VISION_POSITION_ESTIMATE` to Pixhawk
-- [ ] Configure PX4 EKF2 parameters for external vision (see table below)
-- [ ] Verify fusion: MoCap pose matches QGC position display
-- [ ] First tethered hover test (safety pilot with RC kill switch)
-- [ ] Collect flight data: `.ulg` logs with known step inputs applied
+**Architecture:**
+```
+OptiTrack Cameras → Motive (NatNet) → Python Bridge → MAVLink → Pixhawk 6C
+                                              ↕ (UDP forwarding)
+                                             QGC (arm, monitor, emergency stop)
+```
 
-**PX4 EKF2 Parameters (set in QGC):**
+**No RC controller required.** PX4 is configured to arm from QGC only (`COM_RC_IN_MODE = 4`).
+QGC connects through the Python bridge via UDP, maintaining full functionality.
+
+**Bridge script location:** `scripts/mocap_bridge/optitrack_bridge.py`
+**Bridge setup guide:** `scripts/mocap_bridge/README.md`
+
+**Tasks:**
+
+_OptiTrack Setup:_
+- [ ] Attach ≥4 reflective markers to QAV250 in asymmetric arrangement
+- [ ] Create rigid body in Motive (select markers → right-click → Rigid Body → Create)
+- [ ] Note the rigid body ID (default = 1, shown in Properties panel)
+- [ ] Enable streaming: View → Data Streaming Pane → Broadcast Frame Data = ON (Multicast)
+- [ ] Note Motive coordinate frame convention (default: Y-up) — needed for `--frame` flag
+
+_PX4 Configuration (set in QGC → Vehicle Setup → Parameters):_
+- [ ] Calibrate sensors: Accelerometer (6-position), Gyroscope, Level Horizon
+- [ ] Set all PX4 parameters from table below → reboot Pixhawk
+
+_Bridge + QGC:_
+- [ ] Install Python deps on Motive PC: `pip install pymavlink pyserial`
+- [ ] Identify Pixhawk COM port (Device Manager → Ports → look for "PX4 FMU")
+- [ ] Close QGC
+- [ ] Run bridge: `python optitrack_bridge.py --com COMx`
+- [ ] Reopen QGC → Application Settings → Comm Links → Add UDP → port 14551 → Connect
+- [ ] Verify: bridge prints NED position, QGC shows correct position when drone is moved by hand
+
+_Flight Testing:_
+- [ ] Test 1 — Hover: Arm from QGC, takeoff to 1m, hover 15s, land (verify stability)
+- [ ] Test 2 — Altitude step: hover 1m → step to 1.5m → hold 10s → return
+- [ ] Test 3 — Lateral step: hover 1m → step right 0.5m → hold 10s → return
+- [ ] Test 4 — Forward step: hover 1m → step forward 0.5m → hold 10s → return
+- [ ] Record video of each test from fixed camera position
+- [ ] Start/stop Motive recording for each test (File → label each take)
+
+_Data Collection:_
+- [ ] Download `.ulg` flight logs: QGC → Analyze Tools → Log Download → Refresh → Download
+- [ ] Export OptiTrack `.csv`: Motive → File → Export Tracking Data → CSV (Rigid Bodies, Global coords)
+- [ ] Transfer video recordings
+- [ ] Label everything: `Test1_Hover.ulg`, `Test1_Hover.csv`, `Test1_Hover.mp4`, etc.
+
+**PX4 Parameters (set ALL of these in QGC before flying):**
 
 | Parameter | Value | Notes |
 |---|---|---|
-| `EKF2_EV_CTRL` | `15` | Fuse pos + vel + yaw from vision |
-| `EKF2_HGT_REF` | `Vision` | Altitude from MoCap |
-| `EKF2_EV_DELAY` | `10` ms | Tune based on actual pipeline latency |
-| `EKF2_EVP_NOISE` | `0.01` | Position noise (m) |
+| `EKF2_EV_CTRL` | `15` | Fuse position + velocity + yaw from vision |
+| `EKF2_HGT_REF` | `3` (Vision) | Use MoCap for altitude reference |
+| `EKF2_EV_DELAY` | `10` | Pipeline latency in ms |
+| `EKF2_EVP_NOISE` | `0.01` | Position noise (m) — OptiTrack is very accurate |
 | `EKF2_EVA_NOISE` | `0.01` | Attitude noise (rad) |
+| `EKF2_MAG_TYPE` | `5` | Disable magnetometer (use MoCap heading instead) |
+| `COM_ARM_MAG_STR` | `-1` | Disable mag strength check |
+| `COM_RC_IN_MODE` | `4` | No RC stick input (arm from QGC only) |
+| `NAV_RCL_ACT` | `1` (Hold) | Hold position on RC loss (won't trigger since RC disabled) |
+| `COM_ARM_WO_GPS` | `1` | Allow arming without GPS (we use MoCap instead) |
 
-> **Hardware setup:** Select **Pixhawk 6C** (not 6C mini) in the MathWorks board dropdown — same programming workflow.
+> **Hardware setup:** Pixhawk 6C connected to Motive PC via USB. No telemetry radio or RC controller needed.
 
-**Depends on:** Drone cage access, OptiTrack system running  
+**What the .ulg log contains (used for behavior matching):**
+- `actuator_outputs` — timestamped motor PWM commands (this is what we replay in SITL)
+- `vehicle_local_position` — PX4's position estimate
+- `vehicle_attitude` — PX4's attitude estimate (quaternion)
+- `sensor_combined` — raw IMU readings (accel + gyro)
+
+**After flight:** Extract motor commands from `.ulg`, replay through Simulink `Quad_UAV_Dynamics` in normal mode, compare simulated vs OptiTrack ground truth → behavior matching (D2).
+
+**Depends on:** Drone cage access, OptiTrack system running, Python 3.7+ on Motive PC  
 **Feeds into:** D2 (real flight data for comparison), D4 (flying drone demo)
 
 ---
